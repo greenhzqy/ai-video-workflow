@@ -11,19 +11,19 @@
 ## 0. 全局设计
 
 ```
-A1 A2 A3 A4 A5   B1        V1      V2      V3     V4     V5     V6     V7    V8    V9
- 策划五轮 ──► 机械体检 ──► 解说词 ──► 配音 ──► 分镜 ──► 参考帧 ──► 全帧 ──► 打样 ──► 混音 ──► 全片 ──► 封面
-             (0成本)     (低)     (低)    (0)    (30秒)  (中)   (中)   (零重渲) (高)   (低)
-    └────────────── video-director ──────────────┘└────────────── html-explainer ──────────────┘
+A1 A2 A3 A4 A5   B1        V0         V1      V2      V3     V4     V5     V6     V7    V8    V9
+ 策划五轮 ──► 机械体检 ──► 钩子与文案 ──► 解说词 ──► 配音 ──► 分镜 ──► 参考帧 ──► 全帧 ──► 打样 ──► 混音 ──► 全片 ──► 封面
+             (0成本)      (0成本)       (低)     (低)    (0)    (30秒)  (中)   (中)   (零重渲) (高)   (低)
+    └────────────────── video-director ──────────────────┘└────────────── html-explainer ──────────────┘
 ```
 
 **验收记录落在 `acceptance.json`**，由 `accept.py` 管理：
 
 ```bash
 python <vd>/scripts/accept.py --project . --list            # 看当前进度与下一关
-python <vd>/scripts/accept.py --project . --show V2         # 看某一关该验什么
-python <vd>/scripts/accept.py --project . --pass V2 --note "音色 OK，第 3 段重音偏重"
-python <vd>/scripts/accept.py --project . --fail V2 --note "第 5 段语速太快，重合成"
+python <vd>/scripts/accept.py --project . --show V0         # 看某一关该验什么
+python <vd>/scripts/accept.py --project . --pass V0 --note "钩子过了，CTA 改成评论区"
+python <vd>/scripts/accept.py --project . --fail V0 --note "第一句还是铺垫，重写"
 ```
 
 **状态语义**：`pending`（未验）/ `pass`（通过）/ `fail`（打回）/ `skip`（明确跳过，要写理由）。
@@ -37,6 +37,7 @@ python <vd>/scripts/accept.py --project . --fail V2 --note "第 5 段语速太�
 |---|---|---|---|---|---|
 | **A1–A5** | 策划五轮 | `creative-brief.md` | 看一页纸，逐行改 | 意图/参照/参数表/七项/可行性齐全 | **0** |
 | **B1** | 机械体检 | `review.md` | 看报告 | FAIL 清零 | **0** |
+| **V0** | **钩子与文案** | `script/copy.md` | **读文案 + 自问三题** | 钩子三重奏齐 + B5 全过 | **0** |
 | **V1** | 解说词 | `narration.json` | 读全文 + 时长预估 | 无废句、一句一场景、时长在区间 | **低** |
 | **V2** | 配音 | `audio/<id>.mp3`（**一声一文件**） | **逐段听** | 音色/语速/情绪/断句 | **低**（缓存命中） |
 | **V3** | 分镜+风格 | `storyboard.md` + `style-plan.json` | 看表 + 看 `why` 列 | 运镜≥100%、承接≥1/3、风格 3–4 种 | **0** |
@@ -90,6 +91,50 @@ python <vd>/scripts/spec_review.py --project .
 | 强度起伏 | 落差 <0.2 = 平 |
 
 **退回成本**：0。
+
+---
+
+### V0 · 钩子与文案 ★（流量向重点）
+
+**产出**：`script/copy.md`（文案稿：钩子 + 正文 + CTA）
+
+**为什么单独设一关**：社交平台的**前 3 秒决定 90% 的完播率**，封面决定点击。
+文案定不下来就写解说词，等于用错误的钩子生产整片。
+
+**你怎么验收**——先看机械报告，再自问三题：
+
+```bash
+python <vd>/scripts/spec_review.py --project .      # 看 B5-* 那几行
+cat script/copy.md
+```
+
+**机械判据（B5 段自动查）**：
+
+| # | 判据 | 级 |
+|---|---|---|
+| 1 | 第 1 句**不含**「大家好 / 今天我们来聊聊 / 这期视频」 | **FAIL** |
+| 2 | 第 1 句 ≤ 20 字（前 3 秒读得完） | WARN |
+| 3 | 字数落在平台区间（抖音 60–200 / 小红书 150–400） | **FAIL** |
+| 4 | CTA **不含**「下次再见」且为平台原生 | **FAIL** |
+| 5 | CTA 只给**一个**动作 | WARN |
+| 6 | 全文至少一处**数字** | WARN |
+| 7 | 结尾**回扣**开头 | INFO |
+
+**然后自问三题**（机器查不了，只有你能判）：
+
+> **① 第 1 帧抓眼吗？** —— 想象你在刷手机，这个画面能不能让手指停下？
+> **② 第 1 句抛结论吗？** —— 它是在「给答案」还是在「介绍背景」？
+> **③ 结尾给了一个动作吗？** —— 用户看完知道该做什么吗（评论/收藏/转发）？
+
+三题任一为「否」→ 打回重写。
+
+**写作姿势**（详见 `social-hook-engine.md`）：
+- 钩子**三重奏**：第 1 帧视觉钩子 + 第 1 句文字钩子（**别和口播重复**）+ 声音直接开讲
+- **黄金三拍**：钩子(0–3s) → 兑现(3–25s) → 收尾回扣+结论+CTA
+- 长视频可用 `mediastorm-copywriter` 出底稿；社交平台再压缩成三拍
+- 最后过一遍 `humanizer-zh` 去 AI 味（**社交平台要删金句**，见 `social-hook-engine.md` §8）
+
+**退回成本：0**（还没合成任何音频）。
 
 ---
 
@@ -350,6 +395,7 @@ node <skill>/scripts/check_cover.mjs .       # ★ 几何实测，FAIL 清零
 |---|---|---|
 | A1–A5 | 只改文档 | 一切 |
 | B1 | 只改参数 | 一切 |
+| **V0 钩子/文案** | **只改文案**（+ humanizer-zh） | 一切（尚未合成音频） |
 | V1 解说词 | tts → timeline → subs | **帧代码**（beats 自动刷新） |
 | V2 配音 | tts → timeline → subs | 帧代码 |
 | V3 分镜/风格 | style_director → gate_check | 配音、时间轴 |

@@ -57,7 +57,14 @@ GATES: list[dict] = [
     dict(id="B1", name="机械体检", prereq=["A5"],
          verify="python <vd>/scripts/spec_review.py --project .",
          rubric="FAIL 清零；B2 五判据全过（尤其运镜 100%、承接 ≥1/3）"),
-    dict(id="V1", name="解说词", prereq=["B1"],
+    dict(id="V0", name="钩子与文案", prereq=["B1"],
+         artifacts=[("script/copy.md", False)],
+         verify="看 script/copy.md + 跑 spec_review.py 的 B5 段；"
+                "再自问『第 1 帧抓眼吗？第 1 句抛结论吗？结尾给了一个动作吗？』",
+         rubric="① 第1句无『大家好』类铺垫且≤20字 ② 字数落在平台区间 "
+                "③ CTA 平台原生（社交平台禁『下次再见』）且只给一个动作 "
+                "④ 含具体数字 ⑤ 结尾回扣开头 ⑥ 已过 humanizer-zh 去 AI 味"),
+    dict(id="V1", name="解说词", prereq=["V0"],
          artifacts=[("narration.json", True)],
          verify="读全文 + 时长预估",
          rubric="一句一场景 / 块≤16字 / 时长在区间 / 三类废句已删 / 数字有出处"),

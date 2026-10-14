@@ -326,6 +326,173 @@ def check_camera_and_carry(rep: Report, proj: str, plan: dict | None) -> None:
         rep.ok("B2-carry", f"承接处 {carry_n} 处")
 
 
+# ── B5 社交钩子层（流量向，见 social-hook-engine.md）────────────────────
+# 平台画像：字数区间 / 画幅 / 节奏 / 强度建议
+PLATFORM_PROFILE = {
+    "抖音":   dict(chars=(60, 200),  aspect="9:16", pace="fast",   inten=(0.75, 0.95), hook_win=1),
+    "小红书": dict(chars=(150, 400), aspect="9:16", pace="medium", inten=(0.60, 0.80), hook_win=3),
+    "视频号": dict(chars=(120, 350), aspect="16:9", pace="medium", inten=(0.55, 0.75), hook_win=3),
+    "b站":    dict(chars=(0, 0),     aspect="16:9", pace="medium", inten=(0.45, 0.65), hook_win=30),
+    "bilibili": dict(chars=(0, 0),   aspect="16:9", pace="medium", inten=(0.45, 0.65), hook_win=30),
+    "youtube": dict(chars=(0, 0),    aspect="16:9", pace="medium", inten=(0.45, 0.65), hook_win=30),
+}
+
+# 开场禁语（社交平台：前 3 秒出现即掉完播）
+BANNED_OPENERS = ["大家好", "今天我们", "这期视频", "今天我们来聊", "哈喽", "hello everyone",
+                  "欢迎来到", "我是", "咱们今天"]
+
+# 社交平台禁用的 CTA（B站话术，在短视频里是完播率杀手）
+BANNED_CTA = ["下次再见", "我们下次见", "下期再见"]
+
+# 平台原生 CTA 关键词（至少要命中一个才算有 CTA）
+NATIVE_CTA = ["评论区", "收藏", "关注", "转发", "点赞", "蹲一个", "告诉我", "你站哪边",
+              "留言", "三连", "投币", "分享给"]
+
+
+def _load_copy(proj: str) -> tuple[str, str]:
+    """取文案全文。优先 script/copy.md，退回 narration.json 拼接。
+    返回 (全文, 来源说明)。"""
+    p = os.path.join(proj, "script", "copy.md")
+    if os.path.isfile(p):
+        with open(p, encoding="utf-8-sig") as f:
+            return f.read(), "script/copy.md"
+
+    p = os.path.join(proj, "narration.json")
+    data = _load_json(p)
+    if isinstance(data, list) and data:
+        parts = []
+        for item in data:
+            t = str((item or {}).get("text") or "")
+            parts.append(t.replace("|", ""))
+        return "\n".join(parts), "narration.json"
+    return "", ""
+
+
+def check_social_hooks(rep: Report, proj: str, brief: dict, consent: dict | None) -> None:
+    """社交平台钩子与文案体检。只在平台判定为社交平台时启用严格判据。"""
+    director = brief.get("director") or {}
+    platforms = director.get("platform") or []
+    if isinstance(platforms, str):
+        platforms = [platforms]
+    plat = ""
+    for p in platforms:
+        key = str(p).strip().lower()
+        if key in PLATFORM_PROFILE:
+            plat = key
+            break
+    # 也允许从 consent 的 form/cover 反推
+    if not plat and consent:
+        blob = json.dumps(consent, ensure_ascii=False).lower()
+        for k in PLATFORM_PROFILE:
+            if k in blob:
+                plat = k
+                break
+
+    prof = PLATFORM_PROFILE.get(plat) if plat else None
+    is_social = bool(prof and prof["chars"] != (0, 0))
+
+    text, src = _load_copy(proj)
+    if not text:
+        rep.info("B5-copy", "未找到文案（script/copy.md 或 narration.json），钩子体检跳过",
+                 "社交平台文案必须单独过一遍钩子判据",
+                 "写好文案后重跑本脚本")
+        return
+
+    flat = re.sub(r"\s+", "", text)
+    # 去掉 markdown 标记与标题行，抓"第一句"
+    lines = [ln.strip() for ln in text.splitlines()
+             if ln.strip() and not ln.strip().startswith("#")]
+    first_raw = re.sub(r"^[\-\*\d\.\)\s]+", "", lines[0]) if lines else ""
+    # 句边界：中英文句号/问号/感叹号/分号/冒号/逗号都算（前 3 秒只看第一口气）
+    first = re.split(r"[。！？；：，,.!?;:]", first_raw)[0].strip()
+
+    # 判据 1：开场禁语（社交平台才严格）
+    hit = [w for w in BANNED_OPENERS if w.lower() in first.lower()]
+    if hit:
+        lvl = "FAIL" if is_social else "WARN"
+        rep.add(lvl, "B5-opener",
+                f"第一句含开场禁语：{', '.join(hit)}",
+                "前 3 秒出现铺垫语会直接掉完播率" + ("（社交平台硬红线）" if is_social else ""),
+                "第 1 句直接抛结论/反常识/冲突，删掉所有铺垫")
+
+    # 判据 2：第 1 句长度
+    if len(first) > 20:
+        rep.warn("B5-first-len", f"第一句 {len(first)} 字（>20）",
+                 "前 3 秒读不完，文字钩子失效", "压到 20 字内，把修饰全砍")
+
+    # 判据 3：字数落在平台区间
+    if is_social:
+        lo, hi = prof["chars"]
+        n = len(flat)
+        if n < lo:
+            rep.warn("B5-length", f"文案 {n} 字，低于 {plat} 建议下限 {lo}",
+                     "太短撑不起信息量，容易被判定低质",
+                     f"扩到 {lo}–{hi} 字，或换更短的发布形式（图文/短钩子）")
+        elif n > hi:
+            rep.fail("B5-length", f"文案 {n} 字，超出 {plat} 上限 {hi}",
+                     "超出会把视频拖长，完播率崩",
+                     "砍到 1–2 个信息点；把次要内容拆成下一条")
+        else:
+            rep.ok("B5-length", f"文案 {n} 字（{plat} 区间 {lo}–{hi}）")
+    else:
+        rep.info("B5-length", f"文案 {len(flat)} 字",
+                 "未判定为社交平台，跳过平台字数判据",
+                 "若发抖音/小红书，在 brief.director.platform 里写明")
+
+    # 判据 4：CTA
+    banned = [w for w in BANNED_CTA if w in text]
+    if banned and is_social:
+        rep.fail("B5-cta", f"CTA 含 B站话术：{', '.join(banned)}",
+                 "社交平台说「下次再见」是完播率杀手",
+                 "换成平台原生 CTA：评论引导（抖音）/ 收藏引导（小红书）/ 转发引导（视频号）")
+    native = [w for w in NATIVE_CTA if w in text]
+    if is_social:
+        if not native:
+            rep.warn("B5-cta-missing", "未见平台原生 CTA",
+                     "没有 CTA = 放弃互动权重（评论/收藏直接影响推流）",
+                     "结尾 3 秒加一个动作：" + " / ".join(NATIVE_CTA[:6]))
+        elif len(native) > 2:
+            rep.warn("B5-cta-many", f"CTA 出现 {len(native)} 个动作：{', '.join(native)}",
+                     "给两个以上动作，用户一个都不做",
+                     "只保留一个最主要的动作")
+        else:
+            rep.ok("B5-cta", f"平台原生 CTA：{', '.join(native)}")
+
+    # 判据 6：数字或具体名词
+    if not re.search(r"\d", text):
+        rep.warn("B5-specific", "全文没有任何数字",
+                 "含具体数字的标题/句子完播与点击显著更高",
+                 "至少加一个数字（时间/数量/价格/比例）")
+
+    # 判据 7：结尾回扣开头（闭环）—— 粗判：结尾 60 字与前 60 字有无共同实词
+    if len(flat) > 120:
+        head, tail = flat[:60], flat[-60:]
+        common = set(re.findall(r"[\u4e00-\u9fa5]{2}", head)) & \
+                 set(re.findall(r"[\u4e00-\u9fa5]{2}", tail))
+        if not common:
+            rep.info("B5-closure", "结尾与开头没有明显回扣",
+                     "闭环能提升完播与记忆点",
+                     "结尾用开头那个词/意象收一下")
+
+    # 平台参数自洽（画幅/节奏/强度）
+    if prof:
+        aspect = (brief.get("aspect") or "").strip()
+        if aspect and prof["aspect"] not in aspect.replace("：", ":"):
+            rep.warn("B5-aspect", f"brief.aspect={aspect}，与 {plat} 常用 {prof['aspect']} 不一致",
+                     "画幅不符会被平台裁切或留黑边",
+                     f"改成 {prof['aspect']}，封面张数也要跟着调整")
+        lo_i, hi_i = prof["inten"]
+        curve = director.get("intensity_curve") or []
+        vals = [_as_intensity(v) for v in curve]
+        vals = [v for v in vals if v is not None]
+        if vals:
+            mx = max(vals)
+            if mx < lo_i:
+                rep.warn("B5-intensity", f"最高强度 {mx:.2f}，低于 {plat} 建议 {lo_i}–{hi_i}",
+                         "社交平台需要更强的动势抓注意力",
+                         f"开场强度提到 {lo_i}+（钩子段落）")
+
+
 # ── B4 契约一致性 ──────────────────────────────────────────────────────
 def check_contract(rep: Report, consent: dict | None) -> None:
     if consent is None:
@@ -402,6 +569,7 @@ def main() -> int:
         check_self_consistency(rep, brief, consent)
         check_monotony(rep, plan, brief)
         check_camera_and_carry(rep, proj, plan)
+        check_social_hooks(rep, proj, brief, consent)
     check_contract(rep, consent)
 
     n_fail = rep.count("FAIL")

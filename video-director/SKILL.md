@@ -59,12 +59,13 @@ python <skill>/scripts/accept.py --project . --show V2     # 看这关该验什�
 python <skill>/scripts/accept.py --project . --pass V2 --note "..."
 ```
 
-十五关全景（A1–A5 策划 / B1 体检 / V1–V9 制作）见 **`references/acceptance-protocol.md`**。
+十六关全景（A1–A5 策划 / B1 体检 / V0 钩子 / V1–V9 制作）见 **`references/acceptance-protocol.md`**。
 
 | 你说 | 走哪段 |
 |---|---|
 | 「我想做个视频，但说不清要什么样」 | **A**（完整访谈） |
 | 「就这个方向，帮我快速定方案」 | **A 精简版**（轮 1+3，跳过参照锚定） |
+| **「要发社交平台、要流量、要钩子」** | **`references/social-hook-engine.md`**（钩子三重奏 + 黄金三拍 + 平台差异） |
 | 「帮我看看这个分镜/简报行不行」 | **B 单独调用**（读现有 `brief.json` + `storyboard.md`） |
 | 「这版出来会很单调吗 / 会不会像 PPT」 | **B** 的 §2 单调度体检 |
 | 「每生成一段就让我验收一段」 | **`accept.py`** 全程把关（默认就该这样跑） |
@@ -168,10 +169,28 @@ python <skill>/scripts/spec_review.py --project <项目目录>
 |---|---|---|
 | **video-director**（本技能） | **要做什么 + 会不会难看/做不到** | 出片**前** |
 | `html-explainer` | 怎么做出来（调研→解说词→配音→风格→构建→渲染→封面） | 简报拍板**后** |
+| **`mediastorm-copywriter`** | **内容厚度**：影视飓风式口播稿（钩子库 / 黄金七段 / 数据换算 / 类比 / CTA） | 写文案时；**长视频直接可用，短视频取其素材后再压缩** |
+| **`humanizer-zh`** | **人味**：去 AI 痕迹（排比 / 破折号 / 夸大意义 / 模糊归因 / 句式等长） | 文案定稿前最后一道 |
 | `video-shotcraft` | 125 张镜头配方卡（**动效词汇的具体实现**） | 分镜期查卡、写帧时抄动作 |
 | `motion-art-direction` | 艺术指导（运动语言/调性/克制） | 参数表拿不准"该不该动"时 |
 | `animation-principles` | 曲线/时长/十二原理 | 某个动作"不对劲"时查 |
-| `beat-sync-editing` | 卡点、转场、速度坡道 | 你是卡点片，**A3 和 B2 必读** |
+| `beat-sync-editing` | 卡点、转场、速度坡道 | 卡点片，**A3 和 B2 必读** |
+
+**★ 文案三件套的流水线**（社交平台向）：
+
+```
+mediastorm-copywriter  出底稿（内容厚度）
+        ↓
+social-hook-engine.md  改写为社交版（黄金三拍 + 视觉钩子 + 平台原生 CTA）
+        ↓
+humanizer-zh          去 AI 味
+        ↓
+spec_review.py B5     机械验收（开场禁语 / 字数 / CTA / 数字）
+```
+
+⚠️ **一个真实冲突**：飓风要求「结尾落一句金句」，humanizer 要求「删除金句」。
+**长视频听飓风的；社交平台听 humanizer 的**（短视频里金句显得说教，掉完播率）。
+详见 `references/social-hook-engine.md` §8。
 
 **handoff 契约**：本技能结束时，`brief.json` / `consent.json` / `script/storyboard.md` 就位
 → 直接进 `html-explainer` 阶段 0，**不需要重新访谈**。
@@ -183,8 +202,9 @@ python <skill>/scripts/spec_review.py --project <项目目录>
 | 路径 | 作用 |
 |---|---|
 | **`references/pipeline-full.md`** | ★ **完整制作链路**：从建项目到封面交付，逐环节含命令、判据、踩坑 |
-| **`references/acceptance-protocol.md`** | ★ **分段验收协议**：十五关、每关产出物/验收方法/判据/退回成本 |
+| **`references/acceptance-protocol.md`** | ★ **分段验收协议**：十六关、每关产出物/验收方法/判据/退回成本 |
 | **`references/aesthetic-review-layers.md`** | ★ **多层审美审查**：八层（L1 契约 → L8 人工终审） |
+| **`references/social-hook-engine.md`** | ★ **社交钩子引擎**：钩子三重奏 / 黄金三拍 / 平台差异 / 标题封面 / 与飓风+humanizer 的协作（含真实冲突） |
 | `references/interview-bank.md` | 访谈问题库：分轮次、带候选、带"为什么问这个" |
 | `references/feeling-to-params.md` | ★ **感觉→参数翻译表**（核心资产） |
 | `references/genre-playbooks.md` | 五种片型的剧本（讲解/宣传/纯视觉卡点/产品/口播） |
