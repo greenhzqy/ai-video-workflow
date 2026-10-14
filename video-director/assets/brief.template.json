@@ -1,0 +1,26 @@
+{
+  "_note": "video-director 产出：创作简报。style_director.py 读 topic/mood/pace/audience/aspect 五个字段；director 段是本技能附加的细粒度意图（管线忽略未知字段，安全）。",
+  "topic": "",
+  "mood": "",
+  "pace": "",
+  "audience": "",
+  "aspect": "",
+
+  "director": {
+    "_note": "以下由 A3 轮'感觉→参数'翻译得出，需用户逐行确认。",
+    "form": "",
+    "genre": "",
+    "platform": [],
+    "audience_reaction": "",
+    "references_like": [],
+    "references_unlike": [],
+    "rhythm_tier": "",
+    "density_tier": "",
+    "temperature_tier": "",
+    "intensity_curve": [],
+    "transition_policy": "",
+    "shutter": "",
+    "forbidden": [],
+    "open_risks": []
+  }
+}

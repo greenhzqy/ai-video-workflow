@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# 运行产物（这些生成在「项目目录」里，不该进技能仓库）
+acceptance.json
+review.md
+brief.json
+consent.json
+creative-brief.md
+style-plan.json
+layout.json
+subs.json
+
+# 媒体与成片
+*.mp4
+*.mov
+*.wav
+*.mp3
+*.png
+*.jpg
+*.jpeg
+!video-director/assets/**/*.png
+
+# 编辑器 / 系统
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+
+# 本地环境
+.env
+tts.env

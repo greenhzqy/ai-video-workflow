@@ -1,0 +1,38 @@
+{
+  "_note": "确认点记录。choice 必须由用户给出；decided_by 只能是 'user'。缺任何一项 gate_check.py 会拒绝放行。本文件结构必须与 html-explainer 的 gate_check.py 兼容。",
+  "theme": {
+    "choice": "",
+    "decided_by": "",
+    "at": ""
+  },
+  "style": {
+    "choice": "",
+    "decided_by": "",
+    "at": ""
+  },
+  "form": {
+    "choice": "",
+    "decided_by": "",
+    "at": ""
+  },
+  "voice": {
+    "choice": "",
+    "decided_by": "",
+    "at": ""
+  },
+  "duration_sec": {
+    "choice": "",
+    "decided_by": "",
+    "at": ""
+  },
+  "cover": {
+    "choice": "",
+    "decided_by": "",
+    "at": ""
+  },
+  "render_channel": {
+    "choice": "",
+    "decided_by": "",
+    "at": ""
+  }
+}

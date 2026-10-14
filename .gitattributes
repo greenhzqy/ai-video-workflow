@@ -1,0 +1,17 @@
+# 统一按 LF 存储与检出，避免 Windows/macOS/Linux 之间的 diff 噪音
+* text=auto eol=lf
+
+# 二进制（不做换行转换）
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.webp binary
+*.mp3  binary
+*.wav  binary
+*.mp4  binary
+*.mov  binary
+*.zip  binary
+
+# 生成物：不要在 GitHub 上统计语言占比
+*.md   linguist-documentation
